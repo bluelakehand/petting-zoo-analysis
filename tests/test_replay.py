@@ -16,6 +16,8 @@ def test_replay_payload_contains_visualizer_required_sections() -> None:
     assert payload["card_catalog"]["entrance"]["image"] == "assets/cards/entrance.jpg"
     assert payload["players"]
     assert payload["market"]
+    assert payload["supply"]
+    assert payload["market"][0]["count"] > 0
     assert payload["events"]
     assert payload["events"][0]["snapshot"]["players"]
     assert "deck_count" in payload

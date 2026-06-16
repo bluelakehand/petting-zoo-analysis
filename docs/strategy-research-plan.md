@@ -22,7 +22,8 @@ large batches of policy-vs-policy games.
 ## Rule Questions To Verify
 
 - Exact starting coins and player-count setup.
-- Market layout, refill order, and deck composition/counts.
+- Shared stack composition/counts. All buyable cards are available all the time
+  until their stack is empty; there is no random market or refill order.
 - Turn sequence: roll, movement choice, card activation timing, buying timing,
   and whether purchases happen before/after movement.
 - End condition and final scoring.
@@ -45,7 +46,7 @@ large batches of policy-vs-policy games.
    - Legal action generation is separate from action application.
    - Each transition emits an event log for debugging and golden tests.
    - Game logs can be replayed in a visualizer so rules behavior is reviewable
-     by board state, pawn movement, market changes, and coin/scoring changes.
+     by board state, pawn movement, supply stack changes, and coin/scoring changes.
 
 3. **Policy Layer**
    - Start with random, greedy coins, greedy victory points, engine-builder,
@@ -86,7 +87,8 @@ large batches of policy-vs-policy games.
 - Adjacency cluster strategies around food/animal/building types.
 - Pawn mobility strategies using diagonal and same-type movement cards.
 - Player-interaction strategies that steal or tax opponents.
-- Market denial: buying cards mostly to prevent opponents from using them.
+- Stack denial: buying cards mostly to exhaust shared stacks before opponents
+  can use them.
 
 ## Current Baseline Policy Pool
 

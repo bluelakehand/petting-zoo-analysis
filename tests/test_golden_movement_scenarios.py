@@ -22,6 +22,19 @@ def test_gift_shop_makes_entrance_valid_on_five() -> None:
     assert [move.card_id for move in moves] == ["entrance"]
 
 
+def test_entrance_cannot_be_reentered_after_first_move() -> None:
+    state = _state_with_zoo(
+        PlacedCard("entrance", (0, 0)),
+        PlacedCard("gift_shop", (1, 0)),
+    )
+    player = replace(state.players[0], pawn=(1, 0))
+    state = replace(state, players=(player, *state.players[1:]))
+
+    moves = legal_moves(state, roll=5, first_roll=False)
+
+    assert all(move.card_id != "entrance" for move in moves)
+
+
 def test_llama_ride_can_jump_to_any_other_llama_ride_on_one_or_two() -> None:
     state = _state_with_zoo(
         PlacedCard("entrance", (0, 0)),

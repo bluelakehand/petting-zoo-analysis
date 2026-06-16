@@ -15,7 +15,7 @@ Review artifacts:
 
 Acceptance criteria:
 
-- Card catalog includes every market, starting, scoring, Bunny, and Apple
+- Card catalog includes every buyable, starting, scoring, Bunny, and Apple
   Picking variant.
 - Copy counts match the game: normal cards 5, starting cards 3, scoring cards
   3, Bunny variants 1 each, Apple Picking variants 1 each.
@@ -36,7 +36,7 @@ Acceptance criteria:
 - Every card ability has focused tests.
 - A visualizer can replay saved games turn by turn.
 - The visualizer shows each player's zoo grid, pawn position, roll, activated
-  card, ability outcome, coins, VP, market, deck/discard counts, and event log.
+  card, ability outcome, coins, VP, supply stack counts, and event log.
 - Visualizer review is part of approving engine correctness before large
   simulations.
 

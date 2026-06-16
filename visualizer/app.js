@@ -115,12 +115,15 @@ function renderPlacedCard(player, placed, event) {
   `;
 }
 
-function renderMarketCard(cardId) {
+function renderMarketCard(entry) {
+  const cardId = typeof entry === "string" ? entry : entry.card_id;
+  const count = typeof entry === "string" ? "" : `<div class="stackCount">${entry.count} left</div>`;
   const card = replay.card_catalog[cardId];
   const image = card.image ? `<img class="cardImage" src="${escapeHtml(card.image)}" alt="${escapeHtml(card.name)}">` : "";
   return `
     <div class="cell marketCell">
       ${image}
+      ${count}
       <div class="cardOverlay">
         <div class="cardName">${escapeHtml(card.name)}</div>
         <div class="cardMeta">${card.cost} coins | ${card.victory_points} VP</div>

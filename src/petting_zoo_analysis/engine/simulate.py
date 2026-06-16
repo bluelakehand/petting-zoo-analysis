@@ -17,12 +17,9 @@ def new_game(config: GameConfig | None = None, seed: int = 0, player_count: int 
             player_count=player_count or GameConfig.player_count,
             starting_coins=starting_coins if starting_coins is not None else GameConfig.starting_coins,
         )
-    rng = random.Random(seed)
-    deck = [card_id for card_id in build_deck() if card_id != "entrance"]
-    rng.shuffle(deck)
-    market, deck = tuple(deck[: config.market_size]), tuple(deck[config.market_size :])
+    supply = tuple(card_id for card_id in build_deck() if card_id != "entrance")
     players = tuple(PlayerState(player_id=i, coins=config.starting_coins) for i in range(config.player_count))
-    return GameState(players=players, config=config, market=market, deck=deck)
+    return GameState(players=players, config=config, supply=supply)
 
 
 def card_at(player: PlayerState, position: Position) -> PlacedCard | None:
@@ -44,7 +41,7 @@ def legal_buys(state: GameState) -> tuple[LegalBuy, ...]:
     positions = empty_adjacent_positions(player)
     buys: list[LegalBuy] = []
     owned_vp = player.owned_victory_card_ids
-    for card_id in state.market:
+    for card_id in _available_card_ids(state):
         card = CARD_DEFS[card_id]
         if card.cost > player.coins:
             continue
@@ -204,12 +201,9 @@ def apply_buy(state: GameState, buy: LegalBuy) -> GameState:
         coins=player.coins - card.cost,
         zoo=(*player.zoo, PlacedCard(buy.card_id, buy.position)),
     )
-    market = list(state.market)
-    market.remove(buy.card_id)
-    deck = list(state.deck)
-    if deck:
-        market.append(deck.pop(0))
-    state = replace(state, market=tuple(market), deck=tuple(deck))
+    supply = list(state.supply)
+    supply.remove(buy.card_id)
+    state = replace(state, supply=tuple(supply))
     state = _replace_active_player(state, player)
     return _append_event(
         state,
@@ -246,7 +240,12 @@ def _candidate_destinations(player: PlayerState, source: PlacedCard | None, firs
     else:
         allowed_positions = set(adjacent_positions(source.position))
         allowed_positions.update(pos for pos in diagonal_positions(source.position) if (card_at(player, pos) or PlacedCard("", pos)).card_id == "sheep")
-    return tuple(placed for placed in player.zoo if placed.position in allowed_positions)
+    return tuple(placed for placed in player.zoo if placed.card_id != "entrance" and placed.position in allowed_positions)
+
+
+def _available_card_ids(state: GameState) -> tuple[str, ...]:
+    available = set(state.supply)
+    return tuple(card_id for card_id in CARD_DEFS if card_id in available and card_id != "entrance")
 
 
 def _card_matches_roll(player: PlayerState, placed: PlacedCard, roll: int) -> bool:
@@ -294,7 +293,8 @@ def _snapshot(state: GameState) -> dict[str, object]:
         "active_player": state.active_player,
         "turn_number": state.turn_number,
         "winner": state.winner,
-        "market": list(state.market),
+        "market": _supply_snapshot(state),
+        "supply": _supply_snapshot(state),
         "deck_count": len(state.deck),
         "discard_count": len(state.discard),
         "players": [
@@ -315,6 +315,14 @@ def _snapshot(state: GameState) -> dict[str, object]:
             for player in state.players
         ],
     }
+
+
+def _supply_snapshot(state: GameState) -> list[dict[str, object]]:
+    return [
+        {"card_id": card_id, "count": state.supply.count(card_id)}
+        for card_id in CARD_DEFS
+        if card_id != "entrance" and state.supply.count(card_id) > 0
+    ]
 
 
 def _gain_active(state: GameState, amount: int, source: str) -> GameState:

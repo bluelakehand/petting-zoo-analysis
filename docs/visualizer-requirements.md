@@ -18,7 +18,7 @@ not a polished product dashboard.
 - A visible pawn/customer marker on the card last visited by each player.
 - Highlighted movement path, activated card, and purchased card.
 - Player summary: coins, VP, cards owned, and current turn earnings.
-- Market row, deck count, discard count, and game end status.
+- Supply stack counts and game end status.
 - Event log showing rule-relevant state changes for the selected turn.
 
 ## Required Data

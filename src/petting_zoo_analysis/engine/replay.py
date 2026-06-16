@@ -48,7 +48,8 @@ def replay_payload(state: GameState, seed: int, policies: tuple[str, ...] = ()) 
             }
             for player in state.players
         ],
-        "market": list(state.market),
+        "market": supply_snapshot(state),
+        "supply": supply_snapshot(state),
         "deck_count": len(state.deck),
         "discard_count": len(state.discard),
         "events": [asdict(event) for event in state.events],
@@ -58,3 +59,11 @@ def replay_payload(state: GameState, seed: int, policies: tuple[str, ...] = ()) 
 def write_replay(state: GameState, path: str | Path, seed: int, policies: tuple[str, ...] = ()) -> None:
     payload = replay_payload(state, seed=seed, policies=policies)
     Path(path).write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+
+def supply_snapshot(state: GameState) -> list[dict[str, Any]]:
+    return [
+        {"card_id": card_id, "count": state.supply.count(card_id)}
+        for card_id in CARD_DEFS
+        if card_id != "entrance" and state.supply.count(card_id) > 0
+    ]

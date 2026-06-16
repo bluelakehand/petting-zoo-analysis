@@ -52,7 +52,6 @@ class Event:
 class GameConfig:
     player_count: int = 3
     starting_coins: int = 4
-    market_size: int = 6
     max_turns: int = 200
 
 
@@ -62,7 +61,7 @@ class GameState:
     config: GameConfig = field(default_factory=GameConfig)
     active_player: int = 0
     turn_number: int = 1
-    market: tuple[str, ...] = field(default_factory=tuple)
+    supply: tuple[str, ...] = field(default_factory=tuple)
     deck: tuple[str, ...] = field(default_factory=tuple)
     discard: tuple[str, ...] = field(default_factory=tuple)
     events: tuple[Event, ...] = field(default_factory=tuple)
