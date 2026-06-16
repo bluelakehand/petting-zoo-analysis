@@ -10,7 +10,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -44,7 +45,28 @@ input {
   margin: 0;
 }
 
+.fileInputs,
+.tournamentControls,
 .controls {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+}
+
+.fileInputs {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.fileInputs label {
+  align-items: center;
+  display: flex;
+  font-size: 13px;
+  gap: 6px;
+}
+
+.controls,
+.tournamentControls {
   background: white;
   border-bottom: 1px solid #d7d0c2;
   flex-wrap: wrap;
@@ -55,8 +77,24 @@ input {
   min-width: 220px;
 }
 
+.tournamentControls {
+  padding: 10px 16px;
+}
+
+.tournamentControls select {
+  flex: 1;
+  min-width: 280px;
+}
+
 #eventIndex {
   min-width: 96px;
+  text-align: right;
+}
+
+#gameSummary {
+  color: #4f4a43;
+  font-size: 13px;
+  min-width: 220px;
   text-align: right;
 }
 
@@ -229,12 +267,26 @@ input {
     flex-direction: column;
   }
 
+  .fileInputs {
+    justify-content: flex-start;
+  }
+
   .controls input[type="range"] {
+    order: 3;
+    width: 100%;
+  }
+
+  .tournamentControls select {
     order: 3;
     width: 100%;
   }
 
   #eventIndex {
     margin-left: auto;
+  }
+
+  #gameSummary {
+    margin-left: auto;
+    min-width: 0;
   }
 }

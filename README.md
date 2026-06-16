@@ -66,3 +66,16 @@ Run a baseline policy tournament and write JSON/CSV/Markdown outputs:
 $env:PYTHONPATH='src'
 python -m petting_zoo_analysis.experiments.run_batch --games 300 --players 3 --max-turns 80 --output-dir results\baseline-300
 ```
+
+Add `--write-replays` to emit a tournament index plus one replay JSON per
+game:
+
+```powershell
+python -m petting_zoo_analysis.experiments.run_batch --games 12 --players 3 --max-turns 80 --output-dir results\sample-tournament --write-replays
+```
+
+Open a tournament in the visualizer:
+
+```text
+http://127.0.0.1:8765/visualizer/index.html?tournament=../results/sample-tournament/tournament-index.json
+```

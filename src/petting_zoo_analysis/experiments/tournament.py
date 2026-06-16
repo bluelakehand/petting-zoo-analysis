@@ -6,7 +6,7 @@ from math import sqrt
 from typing import Callable
 
 from petting_zoo_analysis.engine.simulate import play_game
-from petting_zoo_analysis.engine.state import GameConfig
+from petting_zoo_analysis.engine.state import GameConfig, GameState
 from petting_zoo_analysis.policies.base import Policy
 from petting_zoo_analysis.policies.heuristics import (
     CheapExpansionPolicy,
@@ -50,8 +50,56 @@ class TournamentResult:
     mean_cards: float
 
 
+@dataclass(frozen=True, slots=True)
+class TournamentGame:
+    game_id: int
+    seed: int
+    policies: tuple[str, ...]
+    state: GameState
+    winner_id: int
+    winner_policy: str
+    ended_by_victory: bool
+    placements: dict[int, int]
+
+
 def run_policy_tournament(game_count: int = 100, player_count: int = 3, max_turns: int = 80) -> list[TournamentResult]:
+    return summarize_tournament_games(run_policy_tournament_games(game_count=game_count, player_count=player_count, max_turns=max_turns))
+
+
+def run_policy_tournament_games(game_count: int = 100, player_count: int = 3, max_turns: int = 80) -> list[TournamentGame]:
     policy_names = tuple(POLICY_FACTORIES)
+    config = GameConfig(player_count=player_count, max_turns=max_turns)
+    games: list[TournamentGame] = []
+
+    for seed in range(game_count):
+        rotated = tuple(policy_names[(seed + offset) % len(policy_names)] for offset in range(player_count))
+        policies = tuple(POLICY_FACTORIES[name]() for name in rotated)
+        state = play_game(policies, seed=seed, config=config)
+        winner_id = state.winner
+        ended_by_victory = winner_id is not None
+        if winner_id is None:
+            winner_id = max(
+                state.players,
+                key=lambda player: (len(player.owned_victory_card_ids), player.coins, len(player.zoo)),
+            ).player_id
+        places = _placements(state)
+        games.append(
+            TournamentGame(
+                game_id=seed,
+                seed=seed,
+                policies=rotated,
+                state=state,
+                winner_id=winner_id,
+                winner_policy=rotated[winner_id],
+                ended_by_victory=ended_by_victory,
+                placements=places,
+            )
+        )
+
+    return games
+
+
+def summarize_tournament_games(games: list[TournamentGame]) -> list[TournamentResult]:
     records: dict[str, dict[str, float]] = defaultdict(
         lambda: {
             "games": 0,
@@ -66,29 +114,17 @@ def run_policy_tournament(game_count: int = 100, player_count: int = 3, max_turn
             "cards": 0,
         }
     )
-    config = GameConfig(player_count=player_count, max_turns=max_turns)
 
-    for seed in range(game_count):
-        rotated = tuple(policy_names[(seed + offset) % len(policy_names)] for offset in range(player_count))
-        policies = tuple(POLICY_FACTORIES[name]() for name in rotated)
-        state = play_game(policies, seed=seed, config=config)
-        winner_id = state.winner
-        ended_by_victory = winner_id is not None
-        if winner_id is None:
-            winner_id = max(
-                state.players,
-                key=lambda player: (len(player.owned_victory_card_ids), player.coins, len(player.zoo)),
-            ).player_id
-        places = _placements(state)
-        for seat, player in enumerate(state.players):
-            name = rotated[seat]
+    for game in games:
+        for seat, player in enumerate(game.state.players):
+            name = game.policies[seat]
             records[name]["games"] += 1
-            is_winner = seat == winner_id
+            is_winner = seat == game.winner_id
             records[name]["wins"] += 1 if is_winner else 0
-            records[name]["victory_wins"] += 1 if is_winner and ended_by_victory else 0
-            records[name]["fallback_wins"] += 1 if is_winner and not ended_by_victory else 0
-            records[name]["place"] += places[seat]
-            records[name]["turns"] += state.turn_number
+            records[name]["victory_wins"] += 1 if is_winner and game.ended_by_victory else 0
+            records[name]["fallback_wins"] += 1 if is_winner and not game.ended_by_victory else 0
+            records[name]["place"] += game.placements[seat]
+            records[name]["turns"] += game.state.turn_number
             records[name]["vp_cards"] += len(player.owned_victory_card_ids)
             records[name]["vp_total"] += player.victory_points
             records[name]["coins"] += player.coins

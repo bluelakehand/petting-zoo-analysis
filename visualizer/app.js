@@ -1,7 +1,16 @@
 let replay = null;
+let tournament = null;
+let tournamentBaseUrl = null;
+let gameCursor = 0;
 let eventCursor = 0;
 
 const fileInput = document.getElementById("fileInput");
+const tournamentFileInput = document.getElementById("tournamentFileInput");
+const tournamentControls = document.getElementById("tournamentControls");
+const prevGameBtn = document.getElementById("prevGameBtn");
+const nextGameBtn = document.getElementById("nextGameBtn");
+const gameSelect = document.getElementById("gameSelect");
+const gameSummary = document.getElementById("gameSummary");
 const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
 const eventSlider = document.getElementById("eventSlider");
@@ -14,9 +23,34 @@ const market = document.getElementById("market");
 fileInput.addEventListener("change", async (event) => {
   const file = event.target.files[0];
   if (!file) return;
-  replay = JSON.parse(await file.text());
-  eventCursor = 0;
-  resetTimeline();
+  tournament = null;
+  tournamentBaseUrl = null;
+  tournamentControls.hidden = true;
+  setReplay(JSON.parse(await file.text()));
+});
+
+tournamentFileInput.addEventListener("change", async (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+  tournamentBaseUrl = null;
+  await setTournament(JSON.parse(await file.text()));
+});
+
+prevGameBtn.addEventListener("click", async () => {
+  if (!tournament) return;
+  gameCursor = Math.max(0, gameCursor - 1);
+  await loadTournamentGame(gameCursor);
+});
+
+nextGameBtn.addEventListener("click", async () => {
+  if (!tournament) return;
+  gameCursor = Math.min(tournament.games.length - 1, gameCursor + 1);
+  await loadTournamentGame(gameCursor);
+});
+
+gameSelect.addEventListener("change", async () => {
+  gameCursor = Number(gameSelect.value);
+  await loadTournamentGame(gameCursor);
 });
 
 prevBtn.addEventListener("click", () => {
@@ -58,16 +92,71 @@ function render() {
   ].join("");
   eventDetails.textContent = event ? JSON.stringify(event, null, 2) : "No events";
   players.innerHTML = snapshot.players.map((player) => renderPlayer(player, event)).join("");
-  market.innerHTML = snapshot.market.map(renderMarketCard).join("");
+  market.innerHTML = (snapshot.supply || snapshot.market || replay.supply || replay.market || []).map(renderMarketCard).join("");
 }
 
 async function loadReplayFromQuery() {
-  const replayPath = new URLSearchParams(window.location.search).get("replay");
+  const params = new URLSearchParams(window.location.search);
+  const tournamentPath = params.get("tournament");
+  if (tournamentPath) {
+    const tournamentUrl = new URL(tournamentPath, window.location.href);
+    const response = await fetch(tournamentUrl);
+    tournamentBaseUrl = tournamentUrl;
+    await setTournament(await response.json());
+    return;
+  }
+  const replayPath = params.get("replay");
   if (!replayPath) return;
   const response = await fetch(replayPath);
-  replay = await response.json();
+  setReplay(await response.json());
+}
+
+function setReplay(nextReplay) {
+  replay = nextReplay;
+  window.replay = replay;
   eventCursor = 0;
   resetTimeline();
+}
+
+async function setTournament(nextTournament) {
+  tournament = nextTournament;
+  gameCursor = 0;
+  renderTournamentControls();
+  await loadTournamentGame(0);
+}
+
+async function loadTournamentGame(index) {
+  const entry = tournament.games[index];
+  if (!entry) return;
+  gameCursor = index;
+  gameSelect.value = String(index);
+  if (entry.replay_payload) {
+    setReplay(entry.replay_payload);
+  } else if (entry.replay) {
+    const replayUrl = tournamentBaseUrl ? new URL(entry.replay, tournamentBaseUrl) : entry.replay;
+    const response = await fetch(replayUrl);
+    setReplay(await response.json());
+  } else {
+    throw new Error(`Tournament game ${entry.game_id} has no replay data.`);
+  }
+  renderTournamentControls();
+}
+
+function renderTournamentControls() {
+  if (!tournament) {
+    tournamentControls.hidden = true;
+    return;
+  }
+  tournamentControls.hidden = false;
+  gameSelect.innerHTML = tournament.games.map((game, index) => {
+    const label = `Game ${game.game_id} | ${game.winner_policy} wins | turn ${game.turn_number}`;
+    return `<option value="${index}">${escapeHtml(label)}</option>`;
+  }).join("");
+  gameSelect.value = String(gameCursor);
+  const game = tournament.games[gameCursor];
+  gameSummary.textContent = game
+    ? `${gameCursor + 1} / ${tournament.games.length} | seed ${game.seed} | P${game.winner_id} ${game.winner_policy}`
+    : "";
 }
 
 function resetTimeline() {

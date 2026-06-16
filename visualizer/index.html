@@ -11,8 +11,17 @@
       <div class="timelineHeader">
         <header class="topbar">
           <h1>Petting Zoo Replay</h1>
-          <input id="fileInput" type="file" accept="application/json">
+          <div class="fileInputs">
+            <label>Replay <input id="fileInput" type="file" accept="application/json"></label>
+            <label>Tournament <input id="tournamentFileInput" type="file" accept="application/json"></label>
+          </div>
         </header>
+        <section class="tournamentControls" id="tournamentControls" hidden>
+          <button id="prevGameBtn" type="button">Prev Game</button>
+          <select id="gameSelect" aria-label="Tournament game"></select>
+          <button id="nextGameBtn" type="button">Next Game</button>
+          <span id="gameSummary"></span>
+        </section>
         <section class="controls" aria-label="Replay timeline">
           <button id="prevBtn" type="button">Prev</button>
           <input id="eventSlider" type="range" min="0" max="0" value="0">

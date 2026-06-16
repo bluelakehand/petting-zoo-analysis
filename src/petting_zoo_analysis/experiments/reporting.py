@@ -4,16 +4,25 @@ import csv
 import json
 from dataclasses import asdict
 from pathlib import Path
+from typing import Any
 
-from petting_zoo_analysis.experiments.tournament import TournamentResult
+from petting_zoo_analysis.engine.replay import replay_payload, write_replay
+from petting_zoo_analysis.experiments.tournament import TournamentGame, TournamentResult
 
 
-def write_tournament_outputs(results: list[TournamentResult], output_dir: str | Path) -> None:
+def write_tournament_outputs(
+    results: list[TournamentResult],
+    output_dir: str | Path,
+    games: list[TournamentGame] | None = None,
+    write_replays: bool = False,
+) -> None:
     path = Path(output_dir)
     path.mkdir(parents=True, exist_ok=True)
     write_tournament_json(results, path / "tournament-results.json")
     write_tournament_csv(results, path / "tournament-results.csv")
     write_tournament_markdown(results, path / "tournament-summary.md")
+    if games is not None:
+        write_tournament_index(results, games, path / "tournament-index.json", replay_dir=path / "games" if write_replays else None)
 
 
 def write_tournament_json(results: list[TournamentResult], path: str | Path) -> None:
@@ -45,3 +54,42 @@ def write_tournament_markdown(results: list[TournamentResult], path: str | Path)
         )
     lines.append("")
     Path(path).write_text("\n".join(lines), encoding="utf-8")
+
+
+def write_tournament_index(
+    results: list[TournamentResult],
+    games: list[TournamentGame],
+    path: str | Path,
+    replay_dir: str | Path | None = None,
+) -> None:
+    index_path = Path(path)
+    replay_path = Path(replay_dir) if replay_dir is not None else None
+    if replay_path is not None:
+        replay_path.mkdir(parents=True, exist_ok=True)
+
+    payload: dict[str, Any] = {
+        "schema_version": 1,
+        "summary": [asdict(result) for result in results],
+        "games": [],
+    }
+    for game in games:
+        replay_file = f"game-{game.game_id:04d}.json"
+        replay_url = f"games/{replay_file}"
+        if replay_path is not None:
+            write_replay(game.state, replay_path / replay_file, seed=game.seed, policies=game.policies)
+        entry: dict[str, Any] = {
+            "game_id": game.game_id,
+            "seed": game.seed,
+            "policies": list(game.policies),
+            "winner_id": game.winner_id,
+            "winner_policy": game.winner_policy,
+            "ended_by_victory": game.ended_by_victory,
+            "turn_number": game.state.turn_number,
+            "placements": game.placements,
+            "replay": replay_url if replay_path is not None else None,
+        }
+        if replay_path is None:
+            entry["replay_payload"] = replay_payload(game.state, seed=game.seed, policies=game.policies)
+        payload["games"].append(entry)
+
+    index_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
