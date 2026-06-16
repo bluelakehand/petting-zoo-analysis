@@ -7,3 +7,4 @@ build/
 *.egg-info/
 sample-replay.json
 replays/
+results/
