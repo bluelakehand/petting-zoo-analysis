@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Any
 from typing import TypeAlias
 
 from petting_zoo_analysis.rules.cards import CARD_DEFS
@@ -43,6 +44,7 @@ class Event:
     player_id: int
     kind: str
     message: str
+    snapshot: dict[str, Any] | None = None
 
 
 @dataclass(frozen=True, slots=True)

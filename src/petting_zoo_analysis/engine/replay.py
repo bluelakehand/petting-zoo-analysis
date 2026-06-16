@@ -27,6 +27,7 @@ def replay_payload(state: GameState, seed: int, policies: tuple[str, ...] = ()) 
                 "cost": card.cost,
                 "victory_points": card.victory_points,
                 "ability_text": card.ability_text,
+                "image": f"assets/cards/{card_id}.jpg",
             }
             for card_id, card in CARD_DEFS.items()
         },
@@ -57,4 +58,3 @@ def replay_payload(state: GameState, seed: int, policies: tuple[str, ...] = ()) 
 def write_replay(state: GameState, path: str | Path, seed: int, policies: tuple[str, ...] = ()) -> None:
     payload = replay_payload(state, seed=seed, policies=policies)
     Path(path).write_text(json.dumps(payload, indent=2), encoding="utf-8")
-

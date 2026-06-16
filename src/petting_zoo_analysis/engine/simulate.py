@@ -238,7 +238,38 @@ def _replace_active_player(state: GameState, player: PlayerState) -> GameState:
 
 
 def _append_event(state: GameState, kind: str, message: str) -> GameState:
-    return replace(state, events=(*state.events, Event(state.turn_number, state.active_player, kind, message)))
+    return replace(
+        state,
+        events=(*state.events, Event(state.turn_number, state.active_player, kind, message, _snapshot(state))),
+    )
+
+
+def _snapshot(state: GameState) -> dict[str, object]:
+    return {
+        "active_player": state.active_player,
+        "turn_number": state.turn_number,
+        "winner": state.winner,
+        "market": list(state.market),
+        "deck_count": len(state.deck),
+        "discard_count": len(state.discard),
+        "players": [
+            {
+                "player_id": player.player_id,
+                "coins": player.coins,
+                "victory_points": player.victory_points,
+                "pawn": list(player.pawn),
+                "zoo": [
+                    {
+                        "card_id": placed.card_id,
+                        "position": list(placed.position),
+                        "tokens": placed.tokens,
+                    }
+                    for placed in player.zoo
+                ],
+            }
+            for player in state.players
+        ],
+    }
 
 
 def _gain_active(state: GameState, amount: int, source: str) -> GameState:

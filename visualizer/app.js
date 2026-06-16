@@ -47,17 +47,18 @@ function render() {
     return;
   }
   const event = replay.events[eventCursor] || null;
+  const snapshot = event?.snapshot || replay;
   eventIndex.textContent = `${eventCursor + 1} / ${replay.events.length}`;
   summary.innerHTML = [
     metric("Seed", replay.seed),
-    metric("Winner", replay.winner ?? "None"),
-    metric("Turn", event ? event.turn : replay.turn_number),
-    metric("Deck", replay.deck_count),
-    metric("Discard", replay.discard_count),
+    metric("Winner", snapshot.winner ?? "None"),
+    metric("Turn", snapshot.turn_number ?? replay.turn_number),
+    metric("Deck", snapshot.deck_count),
+    metric("Discard", snapshot.discard_count),
   ].join("");
   eventDetails.textContent = event ? JSON.stringify(event, null, 2) : "No events";
-  players.innerHTML = replay.players.map(renderPlayer).join("");
-  market.innerHTML = replay.market.map(renderMarketCard).join("");
+  players.innerHTML = snapshot.players.map(renderPlayer).join("");
+  market.innerHTML = snapshot.market.map(renderMarketCard).join("");
 }
 
 async function loadReplayFromQuery() {
@@ -80,29 +81,33 @@ function metric(label, value) {
 }
 
 function renderPlayer(player) {
-  const cells = player.zoo
-    .slice()
-    .sort((a, b) => a.position[1] - b.position[1] || a.position[0] - b.position[0])
-    .map((placed) => renderPlacedCard(player, placed))
-    .join("");
+  const board = boardCells(player);
+  const cells = board.cells.map((placed) => renderPlacedCard(player, placed)).join("");
   return `
     <article class="player">
       <div class="playerHeader">
         <strong>Player ${player.player_id}</strong>
         <span>${player.coins} coins | ${player.victory_points} VP</span>
       </div>
-      <div class="zoo">${cells}</div>
+      <div class="zoo" style="--zoo-cols: ${board.cols}">${cells}</div>
     </article>
   `;
 }
 
 function renderPlacedCard(player, placed) {
+  if (!placed) {
+    return `<div class="cell empty"></div>`;
+  }
   const card = replay.card_catalog[placed.card_id];
   const hasPawn = player.pawn[0] === placed.position[0] && player.pawn[1] === placed.position[1];
+  const image = card.image ? `<img class="cardImage" src="${escapeHtml(card.image)}" alt="${escapeHtml(card.name)}">` : "";
   return `
     <div class="cell ${hasPawn ? "pawn" : ""}">
-      <div class="cardName">${escapeHtml(card.name)}</div>
-      <div class="cardMeta">${escapeHtml(card.kind)} | ${placed.position.join(", ")}</div>
+      ${image}
+      <div class="cardOverlay">
+        <div class="cardName">${escapeHtml(card.name)}</div>
+        <div class="cardMeta">${escapeHtml(card.kind)} | ${placed.position.join(", ")}</div>
+      </div>
       ${placed.tokens ? `<div class="cardMeta">${placed.tokens} token(s)</div>` : ""}
     </div>
   `;
@@ -110,7 +115,33 @@ function renderPlacedCard(player, placed) {
 
 function renderMarketCard(cardId) {
   const card = replay.card_catalog[cardId];
-  return `<div class="cell"><div class="cardName">${escapeHtml(card.name)}</div><div class="cardMeta">${card.cost} coins | ${card.victory_points} VP</div></div>`;
+  const image = card.image ? `<img class="cardImage" src="${escapeHtml(card.image)}" alt="${escapeHtml(card.name)}">` : "";
+  return `
+    <div class="cell marketCell">
+      ${image}
+      <div class="cardOverlay">
+        <div class="cardName">${escapeHtml(card.name)}</div>
+        <div class="cardMeta">${card.cost} coins | ${card.victory_points} VP</div>
+      </div>
+    </div>
+  `;
+}
+
+function boardCells(player) {
+  const byPosition = new Map(player.zoo.map((placed) => [placed.position.join(","), placed]));
+  const xs = player.zoo.map((placed) => placed.position[0]);
+  const ys = player.zoo.map((placed) => placed.position[1]);
+  const minX = Math.min(-2, ...xs);
+  const maxX = Math.max(2, ...xs);
+  const minY = Math.min(-2, ...ys);
+  const maxY = Math.max(2, ...ys);
+  const cells = [];
+  for (let y = minY; y <= maxY; y += 1) {
+    for (let x = minX; x <= maxX; x += 1) {
+      cells.push(byPosition.get(`${x},${y}`) || null);
+    }
+  }
+  return { cells, cols: maxX - minX + 1 };
 }
 
 function escapeHtml(value) {
