@@ -73,10 +73,15 @@ def apply_turn(state: GameState, policy: Policy, rng: random.Random) -> GameStat
     while True:
         roll = rng.randint(1, 6)
         moves = legal_moves(state, roll, first_roll)
-        state = _append_event(state, "roll", f"Player {state.active_player} rolled {roll}; {len(moves)} legal move(s).")
+        state = _append_event(
+            state,
+            "roll",
+            f"Player {state.active_player} rolled {roll}; {len(moves)} legal move(s).",
+            {"roll": roll, "legal_moves": [_move_details(move) for move in moves]},
+        )
         chosen_move = policy.choose_move(state, roll, moves, rng)
         if chosen_move is None:
-            state = _append_event(state, "move_failed", f"Player {state.active_player} cannot move on {roll}.")
+            state = _append_event(state, "move_failed", f"Player {state.active_player} cannot move on {roll}.", {"roll": roll})
             break
         player = state.players[state.active_player]
         placed = card_at(player, chosen_move.destination)
@@ -84,8 +89,13 @@ def apply_turn(state: GameState, policy: Policy, rng: random.Random) -> GameStat
             raise ValueError(f"No card at chosen destination {chosen_move.destination}.")
         player = replace(player, pawn=chosen_move.destination)
         state = _replace_active_player(state, player)
-        state = _append_event(state, "move", f"Player {player.player_id} moved to {CARD_DEFS[placed.card_id].name} at {placed.position}.")
-        state, earned = activate_card(state, placed, turn_earned=turn_earned)
+        state = _append_event(
+            state,
+            "move",
+            f"Player {player.player_id} moved to {CARD_DEFS[placed.card_id].name} at {placed.position}.",
+            {"card_id": placed.card_id, "position": list(placed.position), "roll": roll, "reason": chosen_move.reason},
+        )
+        state, earned = activate_card(state, placed, turn_earned=turn_earned, policy=policy, rng=rng)
         turn_earned += earned
         first_roll = False
 
@@ -101,7 +111,29 @@ def apply_turn(state: GameState, policy: Policy, rng: random.Random) -> GameStat
     return replace(state, active_player=next_player, turn_number=next_turn, winner=winner)
 
 
-def activate_card(state: GameState, placed: PlacedCard, turn_earned: int = 0) -> tuple[GameState, int]:
+def activate_card(
+    state: GameState,
+    placed: PlacedCard,
+    turn_earned: int = 0,
+    policy: Policy | None = None,
+    rng: random.Random | None = None,
+) -> tuple[GameState, int]:
+    card = CARD_DEFS[placed.card_id]
+    state, earned = _activate_card_base(state, placed, turn_earned=turn_earned, policy=policy, rng=rng)
+    bonus = _cow_diagonal_bonus(state.players[state.active_player], placed)
+    if bonus:
+        state = _gain_active(state, bonus, "Cow diagonal bonus")
+        earned += bonus
+    return state, earned
+
+
+def _activate_card_base(
+    state: GameState,
+    placed: PlacedCard,
+    turn_earned: int = 0,
+    policy: Policy | None = None,
+    rng: random.Random | None = None,
+) -> tuple[GameState, int]:
     card = CARD_DEFS[placed.card_id]
     if card.ability_id == "entrance":
         return _gain_active(state, 2, "Entrance"), 2
@@ -121,8 +153,12 @@ def activate_card(state: GameState, placed: PlacedCard, turn_earned: int = 0) ->
     if card.ability_id == "sheep_diagonal":
         return _gain_active(state, 2, "Sheep"), 2
     if card.ability_id == "apple_picking":
-        amount = _apple_token_total(state.players[state.active_player])
-        return _gain_active(state, amount, "Apple Picking"), amount
+        token_total = _apple_token_total(state.players[state.active_player])
+        should_place = policy.choose_apple_picking_token(state, placed, token_total, rng or random.Random(0)) if policy else token_total < 3
+        if should_place and state.players[state.active_player].coins > 0:
+            state = _place_apple_token(state, placed)
+            return state, 0
+        return _gain_active(state, token_total, "Apple Picking"), token_total
     if card.ability_id == "take_7_from_others":
         return _take_from_others(state, 7, "Dolphin")
     if card.ability_id == "tax_vp_cards":
@@ -175,7 +211,12 @@ def apply_buy(state: GameState, buy: LegalBuy) -> GameState:
         market.append(deck.pop(0))
     state = replace(state, market=tuple(market), deck=tuple(deck))
     state = _replace_active_player(state, player)
-    return _append_event(state, "buy", f"Player {player.player_id} bought {card.name} at {buy.position} for {card.cost}.")
+    return _append_event(
+        state,
+        "buy",
+        f"Player {player.player_id} bought {card.name} at {buy.position} for {card.cost}.",
+        {"card_id": buy.card_id, "position": list(buy.position), "cost": card.cost},
+    )
 
 
 def play_game(policies: tuple[Policy, ...], seed: int, config: GameConfig | None = None, max_turns: int | None = None) -> GameState:
@@ -231,16 +272,20 @@ def _move_reason(source: PlacedCard | None, destination: PlacedCard, first_roll:
     return "standard"
 
 
+def _move_details(move: LegalMove) -> dict[str, object]:
+    return {"card_id": move.card_id, "position": list(move.destination), "reason": move.reason}
+
+
 def _replace_active_player(state: GameState, player: PlayerState) -> GameState:
     players = list(state.players)
     players[state.active_player] = player
     return replace(state, players=tuple(players))
 
 
-def _append_event(state: GameState, kind: str, message: str) -> GameState:
+def _append_event(state: GameState, kind: str, message: str, details: dict[str, object] | None = None) -> GameState:
     return replace(
         state,
-        events=(*state.events, Event(state.turn_number, state.active_player, kind, message, _snapshot(state))),
+        events=(*state.events, Event(state.turn_number, state.active_player, kind, message, details or {}, _snapshot(state))),
     )
 
 
@@ -274,11 +319,27 @@ def _snapshot(state: GameState) -> dict[str, object]:
 
 def _gain_active(state: GameState, amount: int, source: str) -> GameState:
     if amount <= 0:
-        return _append_event(state, "ability", f"{source} earned 0 coin(s).")
+        return _append_event(state, "ability", f"{source} earned 0 coin(s).", {"source": source, "coins": 0})
     player = state.players[state.active_player]
     player = replace(player, coins=player.coins + amount)
     state = _replace_active_player(state, player)
-    return _append_event(state, "ability", f"{source} earned {amount} coin(s).")
+    return _append_event(state, "ability", f"{source} earned {amount} coin(s).", {"source": source, "coins": amount})
+
+
+def _place_apple_token(state: GameState, placed: PlacedCard) -> GameState:
+    player = state.players[state.active_player]
+    updated_zoo = tuple(
+        replace(card, tokens=card.tokens + 1) if card.position == placed.position and card.card_id == placed.card_id else card
+        for card in player.zoo
+    )
+    player = replace(player, coins=player.coins - 1, zoo=updated_zoo)
+    state = _replace_active_player(state, player)
+    return _append_event(
+        state,
+        "ability",
+        "Apple Picking banked 1 coin on the card.",
+        {"source": "Apple Picking", "coins": -1, "token_position": list(placed.position)},
+    )
 
 
 def _take_from_others(state: GameState, amount_each: int, source: str) -> tuple[GameState, int]:
@@ -334,6 +395,13 @@ def _count_kinds_at(player: PlayerState, positions: tuple[Position, ...], kinds:
 def _count_names_at(player: PlayerState, positions: tuple[Position, ...], names: set[str]) -> int:
     position_set = set(positions)
     return sum(1 for placed in player.zoo if placed.position in position_set and CARD_DEFS[placed.card_id].name in names)
+
+
+def _cow_diagonal_bonus(player: PlayerState, placed: PlacedCard) -> int:
+    card = CARD_DEFS[placed.card_id]
+    if card.kind.value != "paw" or placed.card_id == "cow":
+        return 0
+    return _count_names_at(player, diagonal_positions(placed.position), {"Cow"})
 
 
 def _winner_after_active_turn(state: GameState) -> int | None:

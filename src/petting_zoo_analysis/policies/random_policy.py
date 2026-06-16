@@ -3,7 +3,7 @@ from __future__ import annotations
 import random
 
 from petting_zoo_analysis.engine.actions import LegalBuy, LegalMove
-from petting_zoo_analysis.engine.state import GameState
+from petting_zoo_analysis.engine.state import GameState, PlacedCard
 from petting_zoo_analysis.policies.base import Policy
 
 
@@ -20,3 +20,10 @@ class RandomPolicy(Policy):
         if not legal_buys:
             return None
         return rng.choice((None, *legal_buys))
+
+    def choose_apple_picking_token(self, state: GameState, placed: PlacedCard, token_total: int, rng: random.Random) -> bool:
+        _ = state
+        _ = placed
+        if token_total == 0:
+            return True
+        return rng.choice((True, False))

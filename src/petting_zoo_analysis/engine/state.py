@@ -44,6 +44,7 @@ class Event:
     player_id: int
     kind: str
     message: str
+    details: dict[str, Any] = field(default_factory=dict)
     snapshot: dict[str, Any] | None = None
 
 

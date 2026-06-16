@@ -57,7 +57,7 @@ function render() {
     metric("Discard", snapshot.discard_count),
   ].join("");
   eventDetails.textContent = event ? JSON.stringify(event, null, 2) : "No events";
-  players.innerHTML = snapshot.players.map(renderPlayer).join("");
+  players.innerHTML = snapshot.players.map((player) => renderPlayer(player, event)).join("");
   market.innerHTML = snapshot.market.map(renderMarketCard).join("");
 }
 
@@ -80,9 +80,9 @@ function metric(label, value) {
   return `<div class="metric"><strong>${escapeHtml(label)}</strong><div>${escapeHtml(String(value))}</div></div>`;
 }
 
-function renderPlayer(player) {
+function renderPlayer(player, event) {
   const board = boardCells(player);
-  const cells = board.cells.map((placed) => renderPlacedCard(player, placed)).join("");
+  const cells = board.cells.map((placed) => renderPlacedCard(player, placed, event)).join("");
   return `
     <article class="player">
       <div class="playerHeader">
@@ -94,16 +94,18 @@ function renderPlayer(player) {
   `;
 }
 
-function renderPlacedCard(player, placed) {
+function renderPlacedCard(player, placed, event) {
   if (!placed) {
     return `<div class="cell empty"></div>`;
   }
   const card = replay.card_catalog[placed.card_id];
   const hasPawn = player.pawn[0] === placed.position[0] && player.pawn[1] === placed.position[1];
+  const isVisitedMove = hasPawn && event?.kind === "move" && event?.player_id === player.player_id;
   const image = card.image ? `<img class="cardImage" src="${escapeHtml(card.image)}" alt="${escapeHtml(card.name)}">` : "";
   return `
-    <div class="cell ${hasPawn ? "pawn" : ""}">
+    <div class="cell ${hasPawn ? "pawn" : ""} ${isVisitedMove ? "visitedMove" : ""}">
       ${image}
+      ${hasPawn ? `<div class="pawnToken" title="Player ${player.player_id} pawn">P${player.player_id}</div>` : ""}
       <div class="cardOverlay">
         <div class="cardName">${escapeHtml(card.name)}</div>
         <div class="cardMeta">${escapeHtml(card.kind)} | ${placed.position.join(", ")}</div>

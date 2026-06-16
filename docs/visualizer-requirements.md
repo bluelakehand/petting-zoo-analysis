@@ -15,6 +15,7 @@ not a polished product dashboard.
 - Current player's roll and chosen action.
 - Each player's zoo grid with card names, icons, roll values, and pawn
   position.
+- A visible pawn/customer marker on the card last visited by each player.
 - Highlighted movement path, activated card, and purchased card.
 - Player summary: coins, VP, cards owned, and current turn earnings.
 - Market row, deck count, discard count, and game end status.
@@ -44,4 +45,3 @@ Each replay log must include:
 
 Gate 2 cannot be approved until sample games can be replayed visually and the
 observed behavior matches expectations.
-
