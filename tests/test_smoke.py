@@ -18,4 +18,4 @@ def test_placeholder_game_is_seeded_and_terminates() -> None:
 
     assert final_a == final_b
     assert final_a.turn_number == 6
-
+    assert final_a.events

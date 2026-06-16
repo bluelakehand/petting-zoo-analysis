@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Petting Zoo Replay</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app">
+      <header class="topbar">
+        <h1>Petting Zoo Replay</h1>
+        <input id="fileInput" type="file" accept="application/json">
+      </header>
+      <section class="controls">
+        <button id="prevBtn" type="button">Prev</button>
+        <input id="eventSlider" type="range" min="0" max="0" value="0">
+        <button id="nextBtn" type="button">Next</button>
+        <span id="eventIndex">No replay loaded</span>
+      </section>
+      <section class="summary" id="summary"></section>
+      <section class="workspace">
+        <section class="players" id="players"></section>
+        <aside class="eventPanel">
+          <h2>Event</h2>
+          <pre id="eventDetails"></pre>
+          <h2>Market</h2>
+          <div id="market"></div>
+        </aside>
+      </section>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>
+

@@ -31,3 +31,23 @@ pip install -e ".[dev]"
 pytest
 ```
 
+## Replay Visualizer
+
+Generate a sample replay:
+
+```powershell
+$env:PYTHONPATH='src'
+python -m petting_zoo_analysis.experiments.write_sample_replay
+```
+
+Serve the repo and open:
+
+```powershell
+python -m http.server 8765 --bind 127.0.0.1
+```
+
+Then visit:
+
+```text
+http://127.0.0.1:8765/visualizer/index.html?replay=../sample-replay.json
+```
