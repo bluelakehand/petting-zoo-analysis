@@ -18,6 +18,13 @@ input {
   min-height: 100vh;
 }
 
+.timelineHeader {
+  box-shadow: 0 2px 12px rgb(32 32 32 / 0.16);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
 .topbar,
 .controls {
   align-items: center;
@@ -40,10 +47,17 @@ input {
 .controls {
   background: white;
   border-bottom: 1px solid #d7d0c2;
+  flex-wrap: wrap;
 }
 
 .controls input[type="range"] {
   flex: 1;
+  min-width: 220px;
+}
+
+#eventIndex {
+  min-width: 96px;
+  text-align: right;
 }
 
 .summary {
@@ -193,5 +207,21 @@ input {
 @media (max-width: 900px) {
   .workspace {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .topbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .controls input[type="range"] {
+    order: 3;
+    width: 100%;
+  }
+
+  #eventIndex {
+    margin-left: auto;
   }
 }

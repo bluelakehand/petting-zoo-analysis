@@ -8,16 +8,18 @@
   </head>
   <body>
     <main class="app">
-      <header class="topbar">
-        <h1>Petting Zoo Replay</h1>
-        <input id="fileInput" type="file" accept="application/json">
-      </header>
-      <section class="controls">
-        <button id="prevBtn" type="button">Prev</button>
-        <input id="eventSlider" type="range" min="0" max="0" value="0">
-        <button id="nextBtn" type="button">Next</button>
-        <span id="eventIndex">No replay loaded</span>
-      </section>
+      <div class="timelineHeader">
+        <header class="topbar">
+          <h1>Petting Zoo Replay</h1>
+          <input id="fileInput" type="file" accept="application/json">
+        </header>
+        <section class="controls" aria-label="Replay timeline">
+          <button id="prevBtn" type="button">Prev</button>
+          <input id="eventSlider" type="range" min="0" max="0" value="0">
+          <button id="nextBtn" type="button">Next</button>
+          <span id="eventIndex">No replay loaded</span>
+        </section>
+      </div>
       <section class="summary" id="summary"></section>
       <section class="workspace">
         <section class="players" id="players"></section>
@@ -32,4 +34,3 @@
     <script src="app.js"></script>
   </body>
 </html>
-
