@@ -22,8 +22,11 @@ if __name__ == "__main__":
     for result in results:
         print(
             f"{result.policy_name:16} wins={result.wins:3d}/{result.games:<3d} "
+            f"victory={result.victory_wins:3d} fallback={result.fallback_wins:3d} "
             f"win_rate={result.win_rate:.3f} +/- {result.ci95:.3f} "
-            f"vp_cards={result.mean_vp_cards:.2f} coins={result.mean_coins:.1f} cards={result.mean_cards:.1f}"
+            f"place={result.mean_place:.2f} turns={result.mean_turns:.1f} "
+            f"vp_cards={result.mean_vp_cards:.2f} vp={result.mean_vp_total:.1f} "
+            f"coins={result.mean_coins:.1f} cards={result.mean_cards:.1f}"
         )
     if args.output_dir:
         write_tournament_outputs(results, args.output_dir)

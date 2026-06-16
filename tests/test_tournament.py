@@ -19,6 +19,8 @@ def test_tournament_returns_summary_for_policy_pool() -> None:
     assert results
     assert all(result.games > 0 for result in results)
     assert all(0 <= result.win_rate <= 1 for result in results)
+    assert all(result.victory_wins + result.fallback_wins == result.wins for result in results)
+    assert all(result.mean_place >= 1 for result in results)
     assert sum(result.wins for result in results) == 5
 
 
@@ -26,4 +28,3 @@ def test_smoke_batch_returns_winner_counts() -> None:
     winners = run_smoke_batch(game_count=5, player_count=3)
 
     assert sum(winners.values()) == 5
-

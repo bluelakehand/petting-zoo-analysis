@@ -33,15 +33,15 @@ def write_tournament_markdown(results: list[TournamentResult], path: str | Path)
     lines = [
         "# Tournament Summary",
         "",
-        "| Policy | Wins | Games | Win Rate | 95% CI | Mean VP Cards | Mean Coins | Mean Cards |",
-        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+        "| Policy | Wins | Victory Wins | Fallback Wins | Games | Win Rate | 95% CI | Mean Place | Mean Turn | Mean VP Cards | Mean VP | Mean Coins | Mean Cards |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
     ]
     for result in sorted(results, key=lambda item: item.win_rate, reverse=True):
         lines.append(
-            f"| {result.policy_name} | {result.wins} | {result.games} | "
-            f"{result.win_rate:.3f} | {result.ci95:.3f} | {result.mean_vp_cards:.2f} | "
+            f"| {result.policy_name} | {result.wins} | {result.victory_wins} | {result.fallback_wins} | {result.games} | "
+            f"{result.win_rate:.3f} | {result.ci95:.3f} | {result.mean_place:.2f} | {result.mean_turns:.1f} | "
+            f"{result.mean_vp_cards:.2f} | {result.mean_vp_total:.2f} | "
             f"{result.mean_coins:.1f} | {result.mean_cards:.1f} |"
         )
     lines.append("")
     Path(path).write_text("\n".join(lines), encoding="utf-8")
-

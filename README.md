@@ -13,9 +13,15 @@ The repository is intentionally structured in layers:
 
 ## Current Status
 
-The starter GitHub repository was empty. The local rule PDF is image-based, so
-the next milestone is to finish card/rule transcription from `PZRULES.pdf` and
-lock it down with golden tests before trusting large simulation results.
+The rules catalog, deterministic Python engine, replay visualizer, and first
+baseline policy tournament runner are in place. The current engine uses full
+shared supply stacks, optional buying, and the four-card victory condition.
+
+Current review artifacts:
+
+- `docs/rules-validation-report.md`
+- `docs/baseline-tournament-notes.md`
+- `visualizer/index.html`
 
 ## First Research Question
 
@@ -50,4 +56,13 @@ Then visit:
 
 ```text
 http://127.0.0.1:8765/visualizer/index.html?replay=../sample-replay.json
+```
+
+## Baseline Tournament
+
+Run a baseline policy tournament and write JSON/CSV/Markdown outputs:
+
+```powershell
+$env:PYTHONPATH='src'
+python -m petting_zoo_analysis.experiments.run_batch --games 300 --players 3 --max-turns 80 --output-dir results\baseline-300
 ```
