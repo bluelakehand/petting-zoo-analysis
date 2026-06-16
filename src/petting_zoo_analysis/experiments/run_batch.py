@@ -1,20 +1,16 @@
 from __future__ import annotations
 
-from petting_zoo_analysis.engine.simulate import play_game
-from petting_zoo_analysis.policies.random_policy import RandomPolicy
+from petting_zoo_analysis.experiments.tournament import run_policy_tournament
 
 
-def run_smoke_batch(game_count: int = 100, player_count: int = 3) -> list[int]:
-    policies = tuple(RandomPolicy() for _ in range(player_count))
-    winners: list[int] = []
-    for seed in range(game_count):
-        final_state = play_game(policies, seed=seed)
-        winner = max(final_state.players, key=lambda player: (player.victory_points, player.coins))
-        winners.append(winner.player_id)
-    return winners
+def run_smoke_batch(game_count: int = 100, player_count: int = 3) -> dict[str, int]:
+    return {result.policy_name: result.wins for result in run_policy_tournament(game_count=game_count, player_count=player_count)}
 
 
 if __name__ == "__main__":
-    winners = run_smoke_batch()
-    print({player_id: winners.count(player_id) for player_id in sorted(set(winners))})
-
+    for result in run_policy_tournament():
+        print(
+            f"{result.policy_name:16} wins={result.wins:3d}/{result.games:<3d} "
+            f"win_rate={result.win_rate:.3f} +/- {result.ci95:.3f} "
+            f"vp_cards={result.mean_vp_cards:.2f} coins={result.mean_coins:.1f} cards={result.mean_cards:.1f}"
+        )

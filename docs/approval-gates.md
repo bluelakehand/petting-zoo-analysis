@@ -26,7 +26,7 @@ Acceptance criteria:
 
 ## Gate 2: Deterministic Python Engine
 
-Status: blocked on Gate 1 approval.
+Status: in progress. Visualizer requirement accepted.
 
 Acceptance criteria:
 
@@ -51,7 +51,7 @@ Acceptance criteria:
 
 ## Gate 4: Baseline Strategy Tournaments
 
-Status: blocked on Gate 2 approval.
+Status: started with first policy pool and tournament runner.
 
 Acceptance criteria:
 

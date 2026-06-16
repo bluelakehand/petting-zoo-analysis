@@ -88,6 +88,16 @@ large batches of policy-vs-policy games.
 - Player-interaction strategies that steal or tax opponents.
 - Market denial: buying cards mostly to prevent opponents from using them.
 
+## Current Baseline Policy Pool
+
+- Random.
+- Greedy victory-card acquisition.
+- Greedy income/card activation value.
+- Cheap expansion.
+- High-cost saver.
+- Roll coverage.
+- Player interaction/tax.
+
 ## Success Criteria
 
 - Simulations are reproducible by seed.
